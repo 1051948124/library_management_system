@@ -504,13 +504,64 @@ class BookManagerment(QWidget):
         管理端：图书管理
     """
 
-    def __init__(self):
-        super(BookManagerment, self).__init__()
+    def __init__(self, parent=None):
+        super(BookManagerment, self).__init__(parent)
         self.init_ui()
 
     def init_ui(self):
-        self.resize(600, 600)
+        self.resize(350, 240)
         self.setWindowTitle("图书管理")
+
+        # label_all_books_borrowed
+        label_all_books_borrowed = QLabel(self)
+        label_all_books_borrowed.setText("已借阅的所有书籍")
+        label_all_books_borrowed.move(10, 10)
+
+        t = self.get_all_borrowing_information()
+        x = len(t)
+
+        # table_column_name
+        self.table_column_name = QTableWidget(x, 4, self)
+        self.table_column_name.setHorizontalHeaderLabels(["借阅人", "书名", "ISBN", "借阅时间"])
+        # 单元格默认宽度为100px 高30px 两边编号以及拖动条和的宽度为30px 去掉单元格后高40px
+        self.table_column_name.resize(330, 190)
+        self.table_column_name.move(10, 30)
+
+        # 添加数据到表格
+        for i in range(x):
+            for j in range(4):
+                print(i, j)
+                item = QTableWidgetItem(str(t[i][j]))
+                print(str(t[i][j]))
+                # print(item)
+                self.table_column_name.setItem(i, j, item)
+
+        self.show()
+
+    @staticmethod
+    def get_all_borrowing_information():
+        # TODO 获取所有的借阅信息
+        conn = BorrowedBooks.pymysql.connect(
+            host='localhost',
+            user='root',
+            port=3306,
+            password='123456',
+            db="library_management_system",
+            charset='utf8'
+        )
+        # noinspection PyBroadException
+        try:
+            with conn.cursor() as cursor:
+                # TODO 查询所有借阅信息
+                sql = "SELECT * FROM `user_borrow_book`;"
+                cursor.execute(sql)
+                data = cursor.fetchall()
+        except Exception as e:
+            print("数据库操作异常：\n", e)
+        finally:
+            conn.close()
+        print("管理端，所有借阅的书籍：", data)
+        return data
 
 
 class BorrowedBooks(QWidget):  # 个人借阅信息：普通用户进入的界面，交互已解决
@@ -773,7 +824,7 @@ class UserBookOperation(QWidget):
 
     def init_ui(self):
         # 1.布局部分
-        self.resize(500, 500)
+        self.resize(250, 500)
         self.setWindowTitle("用户借阅归还界面")
 
         # label_book_name
