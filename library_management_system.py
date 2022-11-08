@@ -4,7 +4,7 @@ import sys
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (QWidget, QApplication, QLabel, QDialog,
                              QTableWidget, QLineEdit, QPushButton,
-                             QMessageBox, QTableWidgetItem)
+                             QMessageBox, QTableWidgetItem, QHeaderView)
 
 
 class SignIn(QDialog):
@@ -509,7 +509,7 @@ class BookManagerment(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        self.resize(350, 240)
+        self.resize(350, 260)
         self.setWindowTitle("图书管理")
 
         # label_all_books_borrowed
@@ -522,6 +522,8 @@ class BookManagerment(QWidget):
 
         # table_column_name
         self.table_column_name = QTableWidget(x, 4, self)
+        # 适应内容的宽度，无法手动调整宽度
+        self.table_column_name.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.table_column_name.setHorizontalHeaderLabels(["借阅人", "书名", "ISBN", "借阅时间"])
         # 单元格默认宽度为100px 高30px 两边编号以及拖动条和的宽度为30px 去掉单元格后高40px
         self.table_column_name.resize(330, 190)
@@ -535,6 +537,21 @@ class BookManagerment(QWidget):
                 print(str(t[i][j]))
                 # print(item)
                 self.table_column_name.setItem(i, j, item)
+
+        # TODO 归还部分界面
+        # label_num_of_returned_books
+        num_of_returned_books = QLabel(self)
+        num_of_returned_books.setText("请输入归还书籍的编号：")
+        num_of_returned_books.move(10, 234)
+
+        # line_num_of_returned_books
+        self.line_edit_num_of_returned_books = QLineEdit(self)
+        self.line_edit_num_of_returned_books.resize(90, 20)
+        self.line_edit_num_of_returned_books.move(150, 230)
+
+        # button_return_books
+        self.button_return_books = QPushButton("归还图书", self)
+        self.button_return_books.move(245, 230)
 
         self.show()
 
@@ -562,6 +579,9 @@ class BookManagerment(QWidget):
             conn.close()
         print("管理端，所有借阅的书籍：", data)
         return data
+
+    # TODO 归还逻辑部分
+    # 注：归还涉及2张表操作，注意回滚
 
 
 class BorrowedBooks(QWidget):  # 个人借阅信息：普通用户进入的界面，交互已解决
