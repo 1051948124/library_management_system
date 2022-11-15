@@ -1,5 +1,6 @@
 # @author = "Feng Xinyu"
 import sys
+import traceback
 
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (QWidget, QApplication, QLabel, QDialog,
@@ -544,7 +545,7 @@ class BookManagerment(QWidget):
         num_of_returned_books.setText("请输入归还书籍的编号：")
         num_of_returned_books.move(10, 234)
 
-        # line_num_of_returned_books
+        # line_edit_num_of_returned_books
         self.line_edit_num_of_returned_books = QLineEdit(self)
         self.line_edit_num_of_returned_books.resize(90, 20)
         self.line_edit_num_of_returned_books.move(150, 230)
@@ -552,6 +553,7 @@ class BookManagerment(QWidget):
         # button_return_books
         self.button_return_books = QPushButton("归还图书", self)
         self.button_return_books.move(245, 230)
+        self.button_return_books.clicked.connect(self.return_books)
 
         self.show()
 
@@ -580,8 +582,71 @@ class BookManagerment(QWidget):
         print("管理端，所有借阅的书籍：", data)
         return data
 
+    # TODO 获取输入框的值
+    def get_the_value_of_the_input_box(self):
+        self.value_of_the_input_box = self.line_edit_num_of_returned_books.text()
+        print("输入框的值为：", self.value_of_the_input_box)
+
+        self.length = len(self.get_all_borrowing_information())
+
+        # 生成关于长度的序号列表：['1','2','3',...]
+        self.number_sequence_string = [str(i + 1) for i in range(self.length)]
+
+        if self.value_of_the_input_box in self.number_sequence_string:
+            # 返回序号
+            return int(self.value_of_the_input_box)
+        else:
+            print("请重新输入")
+
     # TODO 归还逻辑部分
-    # 注：归还涉及2张表操作，注意回滚
+    # TODO 注：归还涉及2张表操作，注意回滚
+    def return_books(self):
+        # 获取所有书籍的信息，然后通过编号获取内容：用户名，书名
+        # 查询部分
+        num = self.get_the_value_of_the_input_box()
+        print(num)
+        all_borrowed_books = self.get_all_borrowing_information()
+        print('下标取值:', all_borrowed_books[num - 1])  # 下标取值
+        subscript = num - 1
+        book_to_be_returned_information = all_borrowed_books[num - 1]
+
+        conn = UserManagerment.pymysql.connect(
+            host='localhost',
+            user='root',
+            port=3306,
+            password='123456',
+            db="library_management_system",
+            charset='utf8'
+        )
+        # noinspection PyBroadException
+        try:
+            with conn.cursor() as cursor:
+                # 删除当前借阅的图书信息
+                sql = f'DELETE FROM `user_borrow_book` WHERE ' \
+                      f'(`student_id`="{book_to_be_returned_information[0]}" AND ' \
+                      f'`book_name`="{book_to_be_returned_information[1]}");'
+                cursor.execute(sql)
+                # 更新库存
+                # TODO 先查询，再+1，再更新
+                sql = f'SELECT `name`,`stock` FROM `book_information` ' \
+                      f'WHERE `name`="{book_to_be_returned_information[1]}";'
+                cursor.execute(sql)
+                data = cursor.fetchall()
+                # data自增
+                print("data1115:", data[0][1])
+                result = str(int(data[0][1]) + 1)  # 自增，加一，字符串
+                # 加1操作
+                sql = f'UPDATE `book_information` SET `stock`="{result}" ' \
+                      f'WHERE `name`="{book_to_be_returned_information[1]}";'
+                cursor.execute(sql)
+
+                conn.commit()
+                print("书籍归还成功")
+        except Exception as e:
+            # 回滚
+            conn.rollback()
+        finally:
+            conn.close()
 
 
 class BorrowedBooks(QWidget):  # 个人借阅信息：普通用户进入的界面，交互已解决
@@ -1070,6 +1135,22 @@ class DatabaseCall:
     def books_borrowed_by_current_user(a="ttt"):
         # TODO 统计当前用户借阅的所有书
         return a + "bbb"
+
+    # 捕捉异常：装饰器实现
+    def run_with_exc(self, f):
+        """
+            程序运行出错时，用messagebox把错误信息显示出来
+        """
+
+        # TODO 抄来的代码，还没理解，先用着
+        def call(window, *args, **kwargs):
+            try:
+                return f(window, *args, **kwargs)
+            except Exception:
+                exc_info = traceback.format_exc()
+                QMessageBox.about(window, "错误信息", exc_info)
+
+        return call
 
 
 if __name__ == '__main__':
