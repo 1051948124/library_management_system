@@ -34,15 +34,21 @@ class SignIn(QDialog):
         self.setWindowTitle("图书管理系统")
 
         # Pixmap,142,184
-        pixmap = QPixmap(r"C:\Users\Feng Xinyu\Desktop\pic1.png")
+        # pixmap = QPixmap(r"C:\Users\Feng Xinyu\Desktop\pic1.png")
+        pixmap = QPixmap(r".\img\book_logo.png")
         label = QLabel(self)
         label.setPixmap(pixmap)
-        label.move(39, 15)
+        label.move(35, 43)
 
         # label_username
         label_username = QLabel(self)
         label_username.setText("用户名：")
         label_username.move(50, 210)
+
+        # css
+        # label_username.setStyleSheet(
+        #     'font-size:15px;'
+        # )
 
         # label_password
         label_password = QLabel(self)
@@ -236,6 +242,7 @@ class UserManagerment(QWidget):
         # button_modify_password
         button_modify_password = QPushButton("修改密码", self)
         button_modify_password.move(202, 250)
+        button_modify_password.clicked.connect(self.modify_password)
 
         # button_select_user
         button_select_user = QPushButton("查询用户", self)
@@ -393,7 +400,77 @@ class UserManagerment(QWidget):
 
     def modify_password(self):
         # TODO 修改密码逻辑，密码修改完成后清除密码框
-        pass
+        str_user_id = self.line_edit_user_id.text()
+        str_user_password = self.line_edit_user_password.text()
+        str_repeat_password = self.line_edit_repeat_password.text()
+
+        if (len(str_user_id) > 0 and
+                len(str_user_password) > 0 and
+                len(str_repeat_password) > 0):
+            # TODO 修改密码的逻辑
+            # 1.用户密码不能等于原密码
+            # 2.用户密码与重复输入的密码相同
+            conn = UserBookOperation.pymysql.connect(
+                host='localhost',
+                user='root',
+                port=3306,
+                password='123456',
+                db="library_management_system",
+                charset='utf8'
+            )
+            # noinspection PyBroadException
+            try:
+                with conn.cursor() as cursor:
+                    # TODO 查询输入的用户ID是否存在于数据库中
+                    sql = f'SELECT * FROM `user_information` ' \
+                          f'WHERE `student_id`="{str_user_id}";'
+                    cursor.execute(sql)
+                    select_user_information = cursor.fetchall()
+                    print(select_user_information)
+            except Exception as e:
+                pass
+            finally:
+                conn.close()
+
+            # 判断是否为空：账户不存在为空
+            if select_user_information:
+                print("存在账户")
+                if str_user_password == str_repeat_password:
+                    if str_user_password == select_user_information[0][2]:
+                        print("输入的密码与原密码相同，无法修改密码")
+                    else:
+                        # TODO 修改密码逻辑
+                        print("可以修改密码")
+
+                        conn = UserBookOperation.pymysql.connect(
+                            host='localhost',
+                            user='root',
+                            port=3306,
+                            password='123456',
+                            db="library_management_system",
+                            charset='utf8'
+                        )
+                        # noinspection PyBroadException
+                        try:
+                            with conn.cursor() as cursor:
+                                sql = f'UPDATE `user_information` ' \
+                                      f'SET `password`="{str_user_password}" ' \
+                                      f'WHERE `student_id`="{str_user_id}";'
+                                cursor.execute(sql)
+                                conn.commit()
+                                print("修改密码成功")
+                        except Exception as e:
+                            # 如果执行失败要回滚
+                            conn.rollback()
+                            print("数据库操作异常：\n", e)
+                        finally:
+                            conn.close()
+                else:
+                    print("重复输入的密码不相同，无法更改密码")
+            else:
+                print("不存在账户")
+
+            print("修改密码：", str_user_id)
 
     def select_user(self):
         # TODO 查询用户逻辑：通过用户ID查询用户名称、密码
@@ -738,11 +815,13 @@ class BorrowedBooks(QWidget):  # 个人借阅信息：普通用户进入的界�
         self.button_return_book.clicked.connect(self.return_book)
 
         # 添加数据到表格：已借阅的书籍
+        print('1117:', self.information_borrowed_books)
         for i in range(len(self.information_borrowed_books)):
-            print(i)
-            item = QTableWidgetItem(self.information_borrowed_books[i][0])
-            # print(item)
-            self.label_print_detailed.setItem(i, 0, item)
+            for j in range(2):
+                print(i)
+                item = QTableWidgetItem(str(self.information_borrowed_books[i][j]))
+                print(item)
+                self.label_print_detailed.setItem(i, j, item)
 
         self.show()
 
@@ -778,7 +857,7 @@ class BorrowedBooks(QWidget):  # 个人借阅信息：普通用户进入的界�
             with conn.cursor() as cursor:
                 # TODO 统计用户借阅的所有书
                 student_id = SignIn.login_id  # todo 获取的用户ID
-                sql = f'SELECT book_name FROM `user_borrow_book` WHERE `student_id`="{student_id}";'
+                sql = f'SELECT book_name,borrow_time FROM `user_borrow_book` WHERE `student_id`="{student_id}";'
                 cursor.execute(sql)
                 data = cursor.fetchall()
                 print("查询成功")
