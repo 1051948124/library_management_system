@@ -32,13 +32,17 @@ class SignIn(QDialog):
     def init_ui(self):
         self.resize(220, 330)
         self.setWindowTitle("图书管理系统")
+        # self.setStyleSheet(
+        #     'background-color: pink;'
+        # )
 
         # Pixmap,142,184
-        # pixmap = QPixmap(r"C:\Users\Feng Xinyu\Desktop\pic1.png")
-        pixmap = QPixmap(r".\img\book_logo.png")
+        pixmap = QPixmap(r"C:\Users\Feng Xinyu\Desktop\pic1.png")
+        # pixmap = QPixmap(r".\img\book_logo.png")
         label = QLabel(self)
         label.setPixmap(pixmap)
-        label.move(35, 43)
+        # label.move(35, 43)
+        label.move(42, 22)
 
         # label_username
         label_username = QLabel(self)
@@ -47,7 +51,9 @@ class SignIn(QDialog):
 
         # css
         # label_username.setStyleSheet(
-        #     'font-size:15px;'
+        #     'font-size:12px;'
+        #     'border:0;'
+        #     'background-color:pink;'
         # )
 
         # label_password
@@ -168,6 +174,12 @@ class ManagementInterface(QWidget):  # 管理端界面：可供实现用户管�
         book_managerment_button.move(60, 100)
         book_managerment_button.clicked.connect(self.get_into_book_management)
 
+        # TODO return_button
+        return_button = QPushButton("返回", self)
+        return_button.move(60, 150)
+        # TODO
+        return_button.clicked.connect(self.return_into_sign_in)
+
         self.show()
 
     def get_into_user_management(self):
@@ -177,6 +189,11 @@ class ManagementInterface(QWidget):  # 管理端界面：可供实现用户管�
 
     def get_into_book_management(self):
         self.get_into = BookManagerment()
+
+    def return_into_sign_in(self):
+        # TODO 如何关闭原窗口
+        self.hide()
+        self.get_into = SignIn()
 
 
 class UserManagerment(QWidget):
@@ -257,6 +274,7 @@ class UserManagerment(QWidget):
         # button_return_to_root
         button_return_to_root = QPushButton("返回", self)
         button_return_to_root.move(202, 280)
+        button_return_to_root.clicked.connect(self.close_the_interface)
 
         self.show()
 
@@ -387,6 +405,7 @@ class UserManagerment(QWidget):
                             cursor.execute(sql)
                             conn.commit()
                             print("修改用户名成功")
+                            QMessageBox.information(self, "提示", "修改用户名成功！")
                             # TODO 显示一下
                     except Exception as e:
                         # 如果执行失败要回滚
@@ -397,6 +416,7 @@ class UserManagerment(QWidget):
                     break
             else:
                 print("账户不存在")
+                QMessageBox.information(self, "提示", "账户不存在")
 
     def modify_password(self):
         # TODO 修改密码逻辑，密码修改完成后清除密码框
@@ -548,6 +568,7 @@ class UserManagerment(QWidget):
         # TODO 2.通过用户ID删除用户（不能删除管理员用户，不能删除已借阅书籍的用户）
         if str_user_id == "root":
             print("是管理员，无法删除。")
+            QMessageBox.information(self, "提示", "是管理员，无法删除。")
         else:
             if int(num_borrowed_book[0][0]) == 0:
                 # TODO 删除用户操作
@@ -575,6 +596,10 @@ class UserManagerment(QWidget):
                     conn.close()
             else:
                 print("存在已经借阅的书，无法删除用户。")
+
+    def close_the_interface(self):
+        # 关闭当前界面
+        self.hide()
 
 
 class BookManagerment(QWidget):
@@ -801,7 +826,7 @@ class BorrowedBooks(QWidget):  # 个人借阅信息：普通用户进入的界�
 
         # button_into_borrow_return
         self.button_into_borrow_return = QPushButton("进入书库", self)
-        self.button_into_borrow_return.move(200, 400)
+        self.button_into_borrow_return.move(170, 400)
         self.button_into_borrow_return.clicked.connect(self.enter_the_library)
 
         # line_edit_return_book_num：归还书籍输入的编号
@@ -811,7 +836,7 @@ class BorrowedBooks(QWidget):  # 个人借阅信息：普通用户进入的界�
 
         # button_return_book
         self.button_return_book = QPushButton("归还", self)
-        self.button_return_book.move(200, 360)
+        self.button_return_book.move(260, 360)
         self.button_return_book.clicked.connect(self.return_book)
 
         # 添加数据到表格：已借阅的书籍
@@ -822,6 +847,11 @@ class BorrowedBooks(QWidget):  # 个人借阅信息：普通用户进入的界�
                 item = QTableWidgetItem(str(self.information_borrowed_books[i][j]))
                 print(item)
                 self.label_print_detailed.setItem(i, j, item)
+
+        # 刷新当前界面按钮
+        self.refresh_interface_button = QPushButton("刷新", self)
+        self.refresh_interface_button.move(260, 400)
+        self.refresh_interface_button.clicked.connect(self.refresh_interface)
 
         self.show()
 
@@ -975,6 +1005,10 @@ class BorrowedBooks(QWidget):  # 个人借阅信息：普通用户进入的界�
         else:
             print("不是纯数字")
 
+    def refresh_interface(self):
+        self.hide()
+        self.refresh_current_interface = BorrowedBooks()
+
 
 class UserBookOperation(QWidget):
     """
@@ -1119,7 +1153,7 @@ class UserBookOperation(QWidget):
                                 cursor.execute(sql)
 
                                 sql = f'INSERT INTO `user_borrow_book` VALUES ' \
-                                      f'("{user_id}","{book_information[int_book_row_num][0]}",NULL,NULL);'
+                                      f'("{user_id}","{book_information[int_book_row_num][0]}",NULL,Now());'
                                 cursor.execute(sql)
 
                                 conn.commit()
@@ -1234,11 +1268,11 @@ class DatabaseCall:
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    start = SignIn()
+    # start = SignIn()
     # start = ManagementInterface()
     # start = userManagerment()
     # start = bookManagerment() # 还没写
     # start = BorrowedBooks()
     # start = UserBookOperation()
-    # start = BookDetailedInformation()
+    start = BookDetailedInformation()
     sys.exit(app.exec_())
